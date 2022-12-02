@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link href='https://fonts.googleapis.com/css?family=Press Start 2P' rel='stylesheet'>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+      body {
+        background-color: black;
+        padding: 50px;
+        font-family: 'Press Start 2P';
+      }
+    </style>
+    <title>Vite App</title>
+  </head>
+  <body>
+    <embed src="assets/background/zer.mp3" hidden="true" autostart="true" id="audio">
+    <div id="app"></div>
+    <script>
+    let config = {
+    type: Phaser.AUTO,
+    width: 2112,
+    height: 672,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 1100 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+let game = new Phaser.Game(config);
+
+
+function preload (){
+
+  this.load.image('sky', 'assets/background/background2.png');
+  this.load.image('ground', 'assets/background/ground.PNG');
+  this.load.image('platform', 'assets/background/platform.PNG');
+  this.load.image('bomb', 'assets/beginning/proper-bomb.png');
+  this.load.image('bullet', 'assets/background/9mm.png');
+  this.load.spritesheet('dude', 'assets/beginning/dude.png', { frameWidth: 32, frameHeight: 48 });
+  this.load.spritesheet('idle', 'assets/background/Gunner_Black_Idle.png', { frameWidth: 112, frameHeight: 90 });
+  this.load.spritesheet('death', 'assets/background/Gunner_Black_Death.png', { frameWidth: 112, frameHeight: 90 });
+  this.load.spritesheet('red-idle', 'assets/background/red/Gunner_Red_Idle.png', { frameWidth: 112, frameHeight: 80 });
+  this.load.spritesheet('reverse', 'assets/background/red/reverse.png', { frameWidth: 112, frameHeight: 80 });
+  this.load.spritesheet('run', 'assets/background/Gunner_Black_Run.png', { frameWidth: 112, frameHeight: 90 });
+  this.load.spritesheet('crouch', 'assets/background/Gunner_Black_Crouch.png', { frameWidth: 112, frameHeight: 90 });
+  this.load.spritesheet('jump', 'assets/background/Gunner_Black_Jump.png', { frameWidth: 112, frameHeight: 90 });
+  this.load.spritesheet('star', 'assets/beginning/coin.PNG', { frameWidth: 34, frameHeight: 100 });
+  this.load.spritesheet("rain", "assets/beginning/rain.png", { frameWidth: 17, frameHeight: 17 })
+  this.load.audio("point", "assets/background/coin-sound2.mp3")
+  this.load.audio("feet", "assets/background/feet.ogg")
+}
+
+let platforms;
+let point;
+let isRunning;
+
+function create (){
+  
+  this.add.image(1056, 336, 'sky');
+  
+  platforms = this.physics.add.staticGroup();
+  platforms.create(1057, 605, 'ground').setScale(1.11).refreshBody()
+  platforms.create(1580, 260, 'platform').setScale(1.11).refreshBody();
+  platforms.create(1040, 410, 'platform');
+  platforms.create(520, 260, 'platform').setScale(1.11).refreshBody();
+
+  player = this.physics.add.sprite(100, 484, 'idle');
+  soldier = this.physics.add.sprite(1600, 190,"red-idle")
+  soldier.setCollideWorldBounds(true);
+  soldier1 = this.physics.add.sprite(460, 190,"red-idle")
+  soldier1.setCollideWorldBounds(true);
+  soldier2 = this.physics.add.sprite(520, 190,"red-idle")
+  soldier2.setCollideWorldBounds(true);
+  player.setCollideWorldBounds(true);
+
+  this.anims.create({
+        key: 'spin',
+        frames: this.anims.generateFrameNumbers('star', { start: 0, end: 6 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+  this.anims.create({
+      key: 'left',
+      frames: this.anims.generateFrameNumbers('run', { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+  });
+
+  this.anims.create({
+      key: 'Crouch',
+      frames: this.anims.generateFrameNumbers('crouch', { start: 0, end: 2 }),
+      frameRate: 7,
+      repeat: -1,
+      repeatDelay: 10000
+  });
+
+  this.anims.create({
+      key: 'Death',
+      frames: this.anims.generateFrameNumbers('death', { start: 0, end: 7 }),
+      frameRate: 7,
+      repeat: -1,
+      repeatDelay: 10000
+  });
+
+  this.anims.create({
+      key: 'Jump',
+      frames: [{ key: "jump", frame: 1}],
+      frameRate: 20
+  });
+
+  this.anims.create({
+      key: 'right',
+      frames: this.anims.generateFrameNumbers('run', { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+  });
+
+  this.anims.create({
+    key: "Idle",
+    frames: this.anims.generateFrameNumbers("idle", {start: 0, end: 4}),
+    frameRate: 10,
+    repeat: -1
+  })
+
+  this.anims.create({
+    key: "Red-Idle",
+    frames: this.anims.generateFrameNumbers("red-idle", {start: 0, end: 4}),
+    frameRate: 10,
+    repeat: -1
+  })
+
+  this.anims.create({
+    key: "reverse",
+    frames: this.anims.generateFrameNumbers("reverse", {start: 0, end: 4}),
+    frameRate: 10,
+    repeat: -1
+  })
+
+  soldier.play("Red-Idle")
+  soldier1.play("reverse")
+  soldier2.play("Red-Idle")
+  this.physics.add.collider(player, platforms);
+  this.physics.add.collider(soldier, platforms);
+  this.physics.add.collider(soldier1, platforms);
+  this.physics.add.collider(soldier2, platforms);
+
+  stars = this.physics.add.group({
+    key: 'star',
+    repeat: 11,
+    setXY: { x: 22, y: 0, stepX: 175 }
+  });
+
+  stars.children.iterate(function (child) {
+      child.play("spin")
+      child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+  });
+  
+  point = this.sound.add("point", {volume: 0.2})
+  feet = this.sound.add("feet", {volume: 1.5})
+  feet.setRate(1.3)
+  
+  this.physics.add.collider(stars, platforms);
+  this.physics.add.overlap(player, stars, collectStar, null, this);
+
+  function collectStar (player, star) {
+    star.disableBody(true, true);
+    point.play()
+    score += 10;
+    scoreText.setText('Score: ' + score);
+
+    if (stars.countActive(true) === 0){
+      
+        stars.children.iterate(function (child) {
+
+            child.enableBody(true, child.x, 0, true, true);
+
+        });
+
+        let x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+        let bomb = bombs.create(x, 16, 'bomb');
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+
+    }
+  }
+
+  bombs = this.physics.add.group();
+  this.physics.add.collider(bombs, platforms);
+  this.physics.add.collider(stars, soldier);
+  this.physics.add.collider(player, bombs, hitBomb, null, this);
+  this.physics.add.collider(player, soldier, hitEnemy, null, this);
+
+  function hitBomb (player, bomb) {
+    this.physics.pause();
+    player.setTint(0xff0000);
+    player.anims.play('turn');
+    gameOver = true;
+  }
+
+  function hitEnemy (player, soldier) {
+    this.physics.pause();
+    player.setTint(0xff0000);
+    gameOver = true;
+  }
+
+  let score = 0;
+  let scoreText;
+  scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#FFF' });
+
+}
+
+
+function update (){
+  cursors = this.input.keyboard.createCursorKeys();
+
+  if (cursors.left.isDown && player.body.touching.down){
+      isRunning = true
+      player.setVelocityX(-300);
+      player.flipX = true
+      player.anims.play('left', true);
+  }
+  else if (cursors.right.isDown && player.body.touching.down)
+  {
+      isRunning = true
+      player.setVelocityX(300);
+      player.flipX = false
+      player.anims.play('right', true);
+  }
+  else if (cursors.down.isDown){
+    isRunning = false
+      player.setVelocityX(0);
+      player.anims.play('Crouch', true);
+  }
+  else if (cursors.space.isDown){
+      isRunning = false
+      player.setVelocityX(0);
+      player.anims.play('Death', true);
+  }
+  else if (cursors.up.isDown){
+    player.anims.play("Jump", true)
+  }
+  else if (!player.body.touching.down && cursors.right.isDown){
+    player.anims.play("Jump", true)
+  }
+  else{
+      isRunning = false
+      player.setVelocityX(0);
+      player.anims.play('Idle', true);
+  }
+
+  if (cursors.up.isDown && player.body.touching.down){
+      player.anims.play("Jump", true)
+      player.setVelocityY(-630);
+  }
+
+  if(isRunning && !feet.isPlaying) {
+      feet.play()
+  }
+
+  if(!player.body.touching.down && feet.isPlaying) {
+      feet.stop()
+  }
+
+}
+
+    </script>
+  </body>
+</html>
